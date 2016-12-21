@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+  <head>
+	<title>Tic Tac Toe</title>
+	<style>
+		.board {
+			display: flex;                     
+			flex-wrap: wrap;                     
+			justify-content: space-around;
+			margin: 5% 15% 0 15%;
+			height: 500px;
+		}
+		.box {
+			flex: 0 0 32%;                       
+			height: 32%; 
+			margin-bottom: 5px;
+			border: solid;
+		}
+	</style>
+  </head>
+  <body>
+	<div style="text-align:center">
+		<h1 class="status"></h1>
+	</div>
+	<div class="board">
+		<div id="0" class="box"></div>
+		<div id="1" class="box"></div>
+		<div id="2" class="box"></div>
+		<div id="3" class="box"></div>
+		<div id="4" class="box"></div>
+		<div id="5" class="box"></div>
+		<div id="6" class="box"></div>
+		<div id="7" class="box"></div>
+		<div id="8" class="box"></div>
+	</div>
+	
+  </body>
+  <script src="/socket.io/socket.io.js"></script>
+	<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+	<script>
+	  var socket = io();
+	  var userid = 0;
+	  socket.on('join response', function(msg) {
+		if(msg.success) {
+			userid = msg.id;
+			$(".status").html("Awaiting opponent...");
+			$('.box').on('click', function(){
+				socket.emit('submit move', {user : userid, box : $(this).attr('id')});
+				return false;
+			});
+			socket.on('start game', function(msg) {
+				if(userid == msg.id) {
+					$(".status").html("Awaiting your move...");
+				}else {
+					$(".status").html("Awaiting opponent's move...");
+				}
+			});
+			socket.on('move response', function(msg) {
+				msg.board.forEach(function(item,index) {
+					if(item == userid){
+						$('#' + index).css({'background-color':'#31708f'});
+					}
+					else if(item != 0) {
+						$('#' + index).css({'background-color':'#a94442'});
+					}
+				});
+				if(userid == msg.id) {
+					$(".status").html("Awaiting opponent's move...");
+				}else {
+					$(".status").html("Awaiting your move...");
+				}
+			});
+			socket.on('reset', function() {
+				$(".status").html("Other player disconnected. Refresh for new game.");
+				socket.disconnect();
+			});
+			socket.on('game over', function(msg) {
+				if(userid == msg.id) {
+					$(".status").html("You win!");
+				}else if(msg.id == 0) {
+					$(".status").html("Draw...");
+				}else {
+					$(".status").html("You lose...");
+				}
+			});
+		}else {
+			$(".status").html("Room is full. Try again later.");
+			socket.disconnect();
+		}
+	  });
+	</script>
+</html>
